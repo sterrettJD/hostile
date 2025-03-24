@@ -383,5 +383,25 @@ ALIGNER = Enum(
                 " {ALIGNER_ARGS} -d '{MMI_PATH}' '{INDEX_PATH}' '{FASTQ1}'"
             ),
         ),
+        "hisat2": Aligner(
+            name="HISAT2",
+            bin_path=Path("hisat2"),
+            data_dir=util.CACHE_DIR,
+            single_cmd=(
+                "'{BIN_PATH}' -x '{INDEX_PATH}' -U '{FASTQ1}'"
+                " -k 1 --mm --threads {ALIGNER_THREADS} {ALIGNER_ARGS}"
+            ),
+            paired_cmd=(
+                "'{BIN_PATH}' -x '{INDEX_PATH}' -1 '{FASTQ1}' -2 '{FASTQ2}'"
+                " -k 1 --mm -p {ALIGNER_THREADS} {ALIGNER_ARGS}"
+            ),
+            interleaved_cmd=(
+                "'{BIN_PATH}' -x '{INDEX_PATH}' --interleaved '{FASTQ1}'"
+                " -k 1 --mm -p {ALIGNER_THREADS} {ALIGNER_ARGS}"
+            ),
+            single_unindexed_cmd="",
+            paired_unindexed_cmd="",
+            interleaved_unindexed_cmd=""
+        )
     },
 )
