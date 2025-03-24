@@ -15,6 +15,7 @@ class ALIGNER(Enum):
 
     bowtie2 = "bowtie2"
     minimap2 = "minimap2"
+    hisat2 = "hisat2"
     auto = "auto"
 
 
@@ -60,12 +61,16 @@ def clean(
     aligner_paired = (
         lib.ALIGNER.bowtie2
         if aligner == ALIGNER.auto or aligner == ALIGNER.bowtie2
-        else lib.ALIGNER.minimap2
+        else lib.ALIGNER.minimap2        
+        if aligner == ALIGNER.minimap2
+        else lib.ALIGNER.hisat2
     )
     aligner_single = (
         lib.ALIGNER.minimap2
         if aligner == ALIGNER.auto or aligner == ALIGNER.minimap2
         else lib.ALIGNER.bowtie2
+        if aligner == ALIGNER.bowtie2
+        else lib.ALIGNER.hisat2
     )
     if fastq2:
         stats = lib.clean_paired_fastqs(
