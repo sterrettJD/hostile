@@ -122,6 +122,38 @@ class Aligner:
                     message += ". Disable airplane mode to enable discovery of standard indexes"
                 raise FileNotFoundError(message)
 
+        if self.name == "HISAT2":
+            if Path(f"{index}.1.ht2").is_file():
+                index_path = Path(index)
+                logging.info(f"Found custom index {index_path}")
+            elif (self.data_dir / f"{index}.1.ht2").is_file():
+                index_path = self.data_dir / index
+                logging.info(f"Found cached standard index {index}")
+            elif not airplane and util.fetch_manifest(util.INDEX_REPOSITORY_URL).get(
+                index
+            ):
+                file_name = f"{index}.tar"
+                file_url = f"{util.INDEX_REPOSITORY_URL}/{file_name}"
+                logging.info(f"Fetching standard index {index} ({file_url})")
+                manifest = util.fetch_manifest(util.INDEX_REPOSITORY_URL)
+                with tempfile.NamedTemporaryFile() as temporary_file:
+                    tmp_path = Path(temporary_file.name)
+                    util.download(f"{file_url}", tmp_path)
+                    expected_sha256 = manifest[index]["assets"][file_name]["sha256"]
+                    logging.info(f"Verifying checksum {expected_sha256}…")
+                    observed_sha256 = util.sha256(tmp_path)
+                    if observed_sha256 != expected_sha256:
+                        raise ValueError(f"Checksum mismatch for {file_name}")
+                    logging.info(f"Extracting {file_name}…")
+                    util.untar_file(tmp_path, self.data_dir)
+                index_path = self.data_dir / index
+                logging.info(f"Downloaded standard index {index_path}")
+            else:
+                message = f"{index} is neither a valid custom HISAT2 index path nor a valid standard index name. Mode: short read splice aware (Hisat2)"
+                if airplane:
+                    message += ". Disable airplane mode to enable discovery of standard indexes"
+                raise FileNotFoundError(message)
+
         return index_path
 
     def gen_clean_cmd(
