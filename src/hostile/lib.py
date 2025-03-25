@@ -440,7 +440,7 @@ def list_indexes(airplane: bool = False):
             name = f.name
             if name.endswith(".fa.gz"):
                 prefix = name[:-6]
-            elif name.endswith(".bt2"):
+            elif name.endswith((".bt2", ".ht2")):
                 prefix = name[:-6]
                 if prefix.endswith(".rev"):
                     prefix = prefix[:-4]
@@ -452,10 +452,13 @@ def list_indexes(airplane: bool = False):
         fa_exists = (util.CACHE_DIR / f"{prefix}.fa.gz").exists()
         mmi_exists = (util.CACHE_DIR / f"{prefix}.mmi").exists()
         bt2_exists = (util.CACHE_DIR / f"{prefix}.1.bt2").exists()
+        ht2_exists = (util.CACHE_DIR / f"{prefix}.1.ht2").exists()
         if fa_exists:
             suffixes.append(f"Minimap2{' with MMI' if mmi_exists else ''}")
         if bt2_exists:
             suffixes.append("Bowtie2")
+        if ht2_exists:
+            suffixes.append("Hisat2")
         suffix_str = ", ".join(suffixes)
         print(f"Local\t{prefix} ({suffix_str})")
 
