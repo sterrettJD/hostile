@@ -148,6 +148,7 @@ def fetch_index(
     :arg name: name of index to download
     :arg minimap2: fetch Minimap2 index
     :arg bowtie2: fetch Bowtie2 index
+    :arg hisat2: fetch HISAT2 index
     """
     lib.fetch_index(name=name, minimap2=minimap2, bowtie2=bowtie2, hisat2=hisat2)
 
