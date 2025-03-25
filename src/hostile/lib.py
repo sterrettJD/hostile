@@ -271,7 +271,11 @@ def clean_paired_fastqs(
         )
     elif aligner == ALIGNER.minimap2:
         logging.info(
-            f"Hostile v{__version__}. Mode: paired short read {'from stdin ' if stdin else ''}(Minimap2)"
+            f"Hostile v{__version__}. Mode: paired long read {'from stdin ' if stdin else ''}(Minimap2)"
+        )
+    elif aligner == ALIGNER.hisat2:
+        logging.info(
+            f"Hostile v{__version__}. Mode: paired short read splice aware {'from stdin ' if stdin else ''}(HISAT2)"
         )
     if not stdin:
         fastqs = [
