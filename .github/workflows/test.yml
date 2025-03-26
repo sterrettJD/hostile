@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - macos_testing
   pull_request:
 
 jobs:
@@ -11,7 +12,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-24.04]
+        os: [ubuntu-24.04, macos-latest]
         python-version: ["3.10", "3.13"]
     defaults:
       run:
