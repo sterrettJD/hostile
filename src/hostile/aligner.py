@@ -328,7 +328,12 @@ class Aligner:
                     alignment_cmd = self.interleaved_cmd
                 else:  # Separate fastq1 and fastq2 file input
                     alignment_cmd = self.paired_cmd
-        else:  # Bowtie2
+        elif self.name == "Bowtie2": 
+            if stdin:  # Interleaved stdin
+                alignment_cmd = self.interleaved_cmd
+            else:  # Separate fastq1 and fastq2 file input
+                alignment_cmd = self.paired_cmd
+        elif self.name == "HISAT2":
             if stdin:  # Interleaved stdin
                 alignment_cmd = self.interleaved_cmd
             else:  # Separate fastq1 and fastq2 file input
@@ -428,7 +433,7 @@ ALIGNER = Enum(
                 " -k 1 --mm -p {ALIGNER_THREADS} {ALIGNER_ARGS}"
             ),
             interleaved_cmd=(
-                "'{BIN_PATH}' -x '{INDEX_PATH}' --interleaved '{FASTQ1}'"
+                "'{BIN_PATH}' -x '{INDEX_PATH}' --12 '{FASTQ1}'"
                 " -k 1 --mm -p {ALIGNER_THREADS} {ALIGNER_ARGS}"
             ),
             single_unindexed_cmd="",
