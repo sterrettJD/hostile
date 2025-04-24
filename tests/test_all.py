@@ -114,7 +114,6 @@ def test_multiple_fastqs_minimap2(tmp_path):
     assert stats[2]["reads_out"] == 1
 
 
-
 def test_multiple_fastqs_hisat2(tmp_path):
     stats = lib.clean_fastqs(
         fastqs=[
@@ -217,7 +216,6 @@ def test_minimal_paired_fastqs_cli(tmp_path):
     run(
         f"hostile clean --index {data_dir}/sars-cov-2/sars-cov-2 --fastq1 {data_dir}/tuberculosis_1_1.fastq.gz --fastq2 {data_dir}/tuberculosis_1_2.fastq.gz --output {tmp_path} --force"
     )
-
 
 
 def test_minimal_paired_fastqs_hisat2(tmp_path):
@@ -1211,3 +1209,26 @@ def test_stdin_paired_interleaved_minimap2(tmp_path):
     lines = contents.split("\n")
     assert lines[0] == "@Mycobacterium_tuberculosis/2"
     assert len(lines) == 5
+
+
+def test_single_hisat2_stdout():
+    run_cmd = run(
+        f"hostile clean --aligner hisat2 --index {data_dir}/sars-cov-2/sars-cov-2 --fastq1 {data_dir}/tuberculosis_1_1.fastq -o -"
+    )
+    stdout_lines = run_cmd.stdout.split("\n")
+    assert stdout_lines[0] == "@Mycobacterium_tuberculosis"
+    assert len(stdout_lines) == 5
+
+
+def test_paired_interleaved_hisat2_stdout():
+    run_cmd = run(
+        f"hostile clean --aligner hisat2 --index {data_dir}/sars-cov-2/sars-cov-2 --fastq1 {data_dir}/tuberculosis_1_1.fastq --fastq2 {data_dir}/tuberculosis_1_2.fastq -o -"
+    )
+    stdout_lines = run_cmd.stdout.split("\n")
+    assert stdout_lines[0] == "@Mycobacterium_tuberculosis/1"
+    assert stdout_lines[4] == "@Mycobacterium_tuberculosis/2"
+    assert len(stdout_lines) == 9
+
+
+# HISAT2 is not compatible with stdin piping, so this is not yet tested.
+# See issue progress at https://github.com/DaehwanKimLab/hisat2/issues/451
