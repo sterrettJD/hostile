@@ -68,6 +68,18 @@ def test_minimal_fastq(tmp_path):
     assert stats[0]["reads_out"] == 1
 
 
+def test_minimal_fastq_hisat2(tmp_path):
+    stats = lib.clean_fastqs(
+        fastqs=[data_dir / "tuberculosis_1_1.fastq.gz"],
+        aligner=lib.ALIGNER.hisat2,
+        index=data_dir / "sars-cov-2/sars-cov-2",
+        output=tmp_path,
+        force=True,
+    )
+    assert "rename" not in stats[0]["options"]
+    assert stats[0]["reads_out"] == 1
+
+
 def test_multiple_fastqs_bowtie2(tmp_path):
     stats = lib.clean_fastqs(
         fastqs=[
@@ -94,6 +106,23 @@ def test_multiple_fastqs_minimap2(tmp_path):
         ],
         aligner=lib.ALIGNER.minimap2,
         index=data_dir / "sars-cov-2/sars-cov-2.fasta.gz",
+        output=tmp_path,
+        force=True,
+    )
+    assert stats[0]["reads_out"] == 0
+    assert stats[1]["reads_out"] == 1
+    assert stats[2]["reads_out"] == 1
+
+
+def test_multiple_fastqs_hisat2(tmp_path):
+    stats = lib.clean_fastqs(
+        fastqs=[
+            data_dir / "sars-cov-2_1_1.fastq",
+            data_dir / "human_1_1.fastq.gz",
+            data_dir / "tuberculosis_1_1.fastq",
+        ],
+        aligner=lib.ALIGNER.hisat2,
+        index=data_dir / "sars-cov-2/sars-cov-2",
         output=tmp_path,
         force=True,
     )
@@ -137,6 +166,24 @@ def test_multiple_paired_fastqs_minimap2(tmp_path):
     assert stats[2]["reads_out"] == 2
 
 
+def test_multiple_paired_fastqs_hisat2(tmp_path):
+    stats = lib.clean_paired_fastqs(
+        fastqs=[
+            (data_dir / "sars-cov-2_1_1.fastq", data_dir / "sars-cov-2_1_2.fastq"),
+            (data_dir / "human_1_1.fastq.gz", data_dir / "human_1_2.fastq.gz"),
+            (data_dir / "tuberculosis_1_1.fastq", data_dir / "tuberculosis_1_2.fastq"),
+        ],
+        aligner=lib.ALIGNER.hisat2,
+        index=data_dir / "sars-cov-2/sars-cov-2",
+        output=tmp_path,
+        force=True,
+    )
+    assert "rename" not in stats[0]["options"]
+    assert stats[0]["reads_out"] == 0
+    assert stats[1]["reads_out"] == 2
+    assert stats[2]["reads_out"] == 2
+
+
 def test_minimal_paired_fastqs(tmp_path):
     stats = lib.clean_paired_fastqs(
         fastqs=[
@@ -171,6 +218,40 @@ def test_minimal_paired_fastqs_cli(tmp_path):
     )
 
 
+def test_minimal_paired_fastqs_hisat2(tmp_path):
+    stats = lib.clean_paired_fastqs(
+        fastqs=[
+            (
+                data_dir / "tuberculosis_1_1.fastq.gz",
+                data_dir / "tuberculosis_1_2.fastq.gz",
+            )
+        ],
+        aligner=lib.ALIGNER.hisat2,
+        index=data_dir / "sars-cov-2/sars-cov-2",
+        output=tmp_path,
+        force=True,
+    )
+    assert stats[0]["reads_out"] == 2
+
+
+def test_minimal_uncompressed_paired_fastqs_hisat2(tmp_path):
+    lib.clean_paired_fastqs(
+        fastqs=[
+            (data_dir / "tuberculosis_1_1.fastq", data_dir / "tuberculosis_1_2.fastq")
+        ],
+        aligner=lib.ALIGNER.hisat2,
+        index=data_dir / "sars-cov-2/sars-cov-2",
+        output=tmp_path,
+        force=True,
+    )
+
+
+def test_minimal_paired_fastqs_cli_hisat2(tmp_path):
+    run(
+        f"hostile clean --index {data_dir}/sars-cov-2/sars-cov-2 --fastq1 {data_dir}/tuberculosis_1_1.fastq.gz --fastq2 {data_dir}/tuberculosis_1_2.fastq.gz --aligner hisat2 --output {tmp_path} --force"
+    )
+
+
 def test_custom_index(tmp_path):
     lib.clean_paired_fastqs(
         fastqs=[
@@ -185,7 +266,7 @@ def test_custom_index(tmp_path):
     )
 
 
-def test_both_aligners_paired_and_unpaired(tmp_path):
+def test_three_aligners_paired_and_unpaired(tmp_path):
     stats = lib.clean_paired_fastqs(
         fastqs=[
             (
@@ -217,6 +298,23 @@ def test_both_aligners_paired_and_unpaired(tmp_path):
     )
     assert (
         stats[0]["aligner"] == "minimap2"
+        and stats[0]["fastq2_out_name"] == "tuberculosis_1_2.clean_2.fastq.gz"
+    )
+
+    stats = lib.clean_paired_fastqs(
+        fastqs=[
+            (
+                data_dir / "tuberculosis_1_1.fastq.gz",
+                data_dir / "tuberculosis_1_2.fastq.gz",
+            )
+        ],
+        aligner=lib.ALIGNER.hisat2,
+        index=data_dir / "sars-cov-2/sars-cov-2",
+        output=tmp_path,
+        force=True,
+    )
+    assert (
+        stats[0]["aligner"] == "hisat2"
         and stats[0]["fastq2_out_name"] == "tuberculosis_1_2.clean_2.fastq.gz"
     )
 
@@ -241,6 +339,18 @@ def test_both_aligners_paired_and_unpaired(tmp_path):
     )
     assert (
         stats[0]["aligner"] == "minimap2"
+        and stats[0]["fastq1_out_name"] == "tuberculosis_1_1.clean.fastq.gz"
+    )
+
+    stats = lib.clean_fastqs(
+        fastqs=[data_dir / "tuberculosis_1_1.fastq.gz"],
+        aligner=lib.ALIGNER.hisat2,
+        index=data_dir / "sars-cov-2/sars-cov-2",
+        output=tmp_path,
+        force=True,
+    )
+    assert (
+        stats[0]["aligner"] == "hisat2"
         and stats[0]["fastq1_out_name"] == "tuberculosis_1_1.clean.fastq.gz"
     )
 
@@ -735,6 +845,17 @@ def test_airplane_invalid_bt2_standard_index_name(tmp_path):
         )
 
 
+def test_airplane_invalid_ht2_standard_index_name(tmp_path):
+    with pytest.raises(FileNotFoundError):
+        lib.clean_fastqs(
+            fastqs=[data_dir / "sars-cov-2_1_1.fastq"],
+            index="invalid_index_name",
+            aligner=lib.ALIGNER.hisat2,
+            output=tmp_path,
+            airplane=True,
+        )
+
+
 def test_override_cache_dir(tmp_path):
     env = os.environ.copy()
     env["HOSTILE_CACHE_DIR"] = "custom_directory"
@@ -793,6 +914,14 @@ def test_stdout_single_mm2():
     assert result.stdout.count("\n") == 4
 
 
+def test_stdout_single_ht2():
+    result = run(
+        f"hostile clean --aligner hisat2 --index {data_dir}/sars-cov-2/sars-cov-2 --fastq1 {data_dir}/tuberculosis_1_1.fastq --force -o -"
+    )
+    assert "@Mycobacterium_tuberculosis" in result.stdout
+    assert result.stdout.count("\n") == 4
+
+
 def test_stdout_paired_bt2():
     result = run(
         f"hostile clean --aligner bowtie2 --index {data_dir}/sars-cov-2/sars-cov-2 --fastq1 {data_dir}/tuberculosis_1_1.fastq --fastq2 {data_dir}/tuberculosis_1_2.fastq --force -o -"
@@ -805,6 +934,15 @@ def test_stdout_paired_bt2():
 def test_stdout_paired_mm2():
     result = run(
         f"hostile clean --aligner minimap2 --index {data_dir}/sars-cov-2/sars-cov-2.fasta.gz --fastq1 {data_dir}/tuberculosis_1_1.fastq --fastq2 {data_dir}/tuberculosis_1_2.fastq --force -o -"
+    )
+    assert "@Mycobacterium_tuberculosis/1" in result.stdout
+    assert "@Mycobacterium_tuberculosis/2" in result.stdout
+    assert result.stdout.count("\n") == 8
+
+
+def test_stdout_paired_ht2():
+    result = run(
+        f"hostile clean --aligner hisat2 --index {data_dir}/sars-cov-2/sars-cov-2 --fastq1 {data_dir}/tuberculosis_1_1.fastq --fastq2 {data_dir}/tuberculosis_1_2.fastq --force -o -"
     )
     assert "@Mycobacterium_tuberculosis/1" in result.stdout
     assert "@Mycobacterium_tuberculosis/2" in result.stdout
@@ -1071,3 +1209,26 @@ def test_stdin_paired_interleaved_minimap2(tmp_path):
     lines = contents.split("\n")
     assert lines[0] == "@Mycobacterium_tuberculosis/2"
     assert len(lines) == 5
+
+
+def test_single_hisat2_stdout():
+    run_cmd = run(
+        f"hostile clean --aligner hisat2 --index {data_dir}/sars-cov-2/sars-cov-2 --fastq1 {data_dir}/tuberculosis_1_1.fastq -o -"
+    )
+    stdout_lines = run_cmd.stdout.split("\n")
+    assert stdout_lines[0] == "@Mycobacterium_tuberculosis"
+    assert len(stdout_lines) == 5
+
+
+def test_paired_interleaved_hisat2_stdout():
+    run_cmd = run(
+        f"hostile clean --aligner hisat2 --index {data_dir}/sars-cov-2/sars-cov-2 --fastq1 {data_dir}/tuberculosis_1_1.fastq --fastq2 {data_dir}/tuberculosis_1_2.fastq -o -"
+    )
+    stdout_lines = run_cmd.stdout.split("\n")
+    assert stdout_lines[0] == "@Mycobacterium_tuberculosis/1"
+    assert stdout_lines[4] == "@Mycobacterium_tuberculosis/2"
+    assert len(stdout_lines) == 9
+
+
+# HISAT2 is not compatible with stdin piping, so this is not yet tested.
+# See issue progress at https://github.com/DaehwanKimLab/hisat2/issues/451

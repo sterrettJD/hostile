@@ -15,6 +15,7 @@ class ALIGNER(Enum):
 
     bowtie2 = "bowtie2"
     minimap2 = "minimap2"
+    hisat2 = "hisat2"
     auto = "auto"
 
 
@@ -42,7 +43,7 @@ def clean(
     :arg fastq2: optional path to reverse fastq[.gz] file or - for stdin
     :arg aligner: alignment algorithm. Defaults to minimap2 (long read) given fastq1 only or bowtie2 (short read)
         given fastq1 and fastq2. Override with bowtie2 for single/unpaired short reads
-    :arg index: name of standard index or path to custom genome (Minimap2) or Bowtie2 index
+    :arg index: name of standard index or path to custom genome (Minimap2), Bowtie2 index, or HISAT2 index
     :arg invert: keep only reads aligning to the index (and their mates if applicable)
     :arg rename: replace read names with incrementing integers
     :arg reorder: ensure deterministic output order
@@ -60,12 +61,16 @@ def clean(
     aligner_paired = (
         lib.ALIGNER.bowtie2
         if aligner == ALIGNER.auto or aligner == ALIGNER.bowtie2
-        else lib.ALIGNER.minimap2
+        else lib.ALIGNER.minimap2        
+        if aligner == ALIGNER.minimap2
+        else lib.ALIGNER.hisat2
     )
     aligner_single = (
         lib.ALIGNER.minimap2
         if aligner == ALIGNER.auto or aligner == ALIGNER.minimap2
         else lib.ALIGNER.bowtie2
+        if aligner == ALIGNER.bowtie2
+        else lib.ALIGNER.hisat2
     )
     if fastq2:
         stats = lib.clean_paired_fastqs(
@@ -135,6 +140,7 @@ def fetch_index(
     name: str = util.DEFAULT_INDEX_NAME,
     minimap2: bool = False,
     bowtie2: bool = False,
+    hisat2: bool = False
 ) -> None:
     """
     Download and cache indexes from object storage for use with hostile clean
@@ -142,8 +148,9 @@ def fetch_index(
     :arg name: name of index to download
     :arg minimap2: fetch Minimap2 index
     :arg bowtie2: fetch Bowtie2 index
+    :arg hisat2: fetch HISAT2 index
     """
-    lib.fetch_index(name=name, minimap2=minimap2, bowtie2=bowtie2)
+    lib.fetch_index(name=name, minimap2=minimap2, bowtie2=bowtie2, hisat2=hisat2)
 
 
 def list_indexes(airplane: bool = False):

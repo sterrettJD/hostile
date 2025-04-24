@@ -122,6 +122,38 @@ class Aligner:
                     message += ". Disable airplane mode to enable discovery of standard indexes"
                 raise FileNotFoundError(message)
 
+        if self.name == "HISAT2":
+            if Path(f"{index}.1.ht2").is_file():
+                index_path = Path(index)
+                logging.info(f"Found custom index {index_path}")
+            elif (self.data_dir / f"{index}.1.ht2").is_file():
+                index_path = self.data_dir / index
+                logging.info(f"Found cached standard index {index}")
+            elif not airplane and util.fetch_manifest(util.INDEX_REPOSITORY_URL).get(
+                index
+            ):
+                file_name = f"{index}.tar"
+                file_url = f"{util.INDEX_REPOSITORY_URL}/{file_name}"
+                logging.info(f"Fetching standard index {index} ({file_url})")
+                manifest = util.fetch_manifest(util.INDEX_REPOSITORY_URL)
+                with tempfile.NamedTemporaryFile() as temporary_file:
+                    tmp_path = Path(temporary_file.name)
+                    util.download(f"{file_url}", tmp_path)
+                    expected_sha256 = manifest[index]["assets"][file_name]["sha256"]
+                    logging.info(f"Verifying checksum {expected_sha256}…")
+                    observed_sha256 = util.sha256(tmp_path)
+                    if observed_sha256 != expected_sha256:
+                        raise ValueError(f"Checksum mismatch for {file_name}")
+                    logging.info(f"Extracting {file_name}…")
+                    util.untar_file(tmp_path, self.data_dir)
+                index_path = self.data_dir / index
+                logging.info(f"Downloaded standard index {index_path}")
+            else:
+                message = f"{index} is neither a valid custom HISAT2 index path nor a valid standard index name. Mode: short read splice aware (Hisat2)"
+                if airplane:
+                    message += ". Disable airplane mode to enable discovery of standard indexes"
+                raise FileNotFoundError(message)
+
         return index_path
 
     def gen_clean_cmd(
@@ -296,7 +328,12 @@ class Aligner:
                     alignment_cmd = self.interleaved_cmd
                 else:  # Separate fastq1 and fastq2 file input
                     alignment_cmd = self.paired_cmd
-        else:  # Bowtie2
+        elif self.name == "Bowtie2": 
+            if stdin:  # Interleaved stdin
+                alignment_cmd = self.interleaved_cmd
+            else:  # Separate fastq1 and fastq2 file input
+                alignment_cmd = self.paired_cmd
+        elif self.name == "HISAT2":
             if stdin:  # Interleaved stdin
                 alignment_cmd = self.interleaved_cmd
             else:  # Separate fastq1 and fastq2 file input
@@ -383,5 +420,25 @@ ALIGNER = Enum(
                 " {ALIGNER_ARGS} -d '{MMI_PATH}' '{INDEX_PATH}' '{FASTQ1}'"
             ),
         ),
+        "hisat2": Aligner(
+            name="HISAT2",
+            bin_path=Path("hisat2"),
+            data_dir=util.CACHE_DIR,
+            single_cmd=(
+                "'{BIN_PATH}' -x '{INDEX_PATH}' -U '{FASTQ1}'"
+                " -k 1 --mm --threads {ALIGNER_THREADS} {ALIGNER_ARGS}"
+            ),
+            paired_cmd=(
+                "'{BIN_PATH}' -x '{INDEX_PATH}' -1 '{FASTQ1}' -2 '{FASTQ2}'"
+                " -k 1 --mm -p {ALIGNER_THREADS} {ALIGNER_ARGS}"
+            ),
+            interleaved_cmd=(
+                "'{BIN_PATH}' -x '{INDEX_PATH}' --12 '{FASTQ1}'"
+                " -k 1 --mm -p {ALIGNER_THREADS} {ALIGNER_ARGS}"
+            ),
+            single_unindexed_cmd="",
+            paired_unindexed_cmd="",
+            interleaved_unindexed_cmd=""
+        )
     },
 )

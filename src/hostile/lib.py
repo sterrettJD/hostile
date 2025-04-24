@@ -191,6 +191,10 @@ def clean_fastqs(
         logging.info(
             f"Hostile v{__version__}. Mode: long read {'from stdin ' if stdin else ''}(Minimap2)"
         )
+    elif aligner == ALIGNER.hisat2:
+        logging.info(
+            f"Hostile v{__version__}. Mode: short read splice aware {'from stdin ' if stdin else ''}(HISAT2)"
+        )
     if not stdin:
         fastqs = [Path(path).absolute() for path in fastqs]
         if not all(fastq.is_file() for fastq in fastqs):
@@ -267,7 +271,11 @@ def clean_paired_fastqs(
         )
     elif aligner == ALIGNER.minimap2:
         logging.info(
-            f"Hostile v{__version__}. Mode: paired short read {'from stdin ' if stdin else ''}(Minimap2)"
+            f"Hostile v{__version__}. Mode: paired long read {'from stdin ' if stdin else ''}(Minimap2)"
+        )
+    elif aligner == ALIGNER.hisat2:
+        logging.info(
+            f"Hostile v{__version__}. Mode: paired short read splice aware {'from stdin ' if stdin else ''}(HISAT2)"
         )
     if not stdin:
         fastqs = [
@@ -406,13 +414,18 @@ def fetch_index(
     name: str = util.DEFAULT_INDEX_NAME,
     minimap2: bool = False,
     bowtie2: bool = False,
+    hisat2: bool = False,
 ) -> None:
-    if minimap2 or (not minimap2 and not bowtie2):
+    methods = [minimap2, bowtie2, hisat2]
+    if minimap2 or (not any(methods)):
         logging.info(f"Looking for Minimap2 index {name}")
         ALIGNER.minimap2.value.check_index(name)
-    if bowtie2 or (not minimap2 and not bowtie2):
+    if bowtie2 or (not any(methods)):
         logging.info(f"Looking for Bowtie2 index {name}")
         ALIGNER.bowtie2.value.check_index(name)
+    if hisat2 or (not any(methods)):
+        logging.info(f"Looking for HISAT2 index {name}")
+        ALIGNER.hisat2.value.check_index(name)
 
 
 def list_indexes(airplane: bool = False):
@@ -431,7 +444,7 @@ def list_indexes(airplane: bool = False):
             name = f.name
             if name.endswith(".fa.gz"):
                 prefix = name[:-6]
-            elif name.endswith(".bt2"):
+            elif name.endswith((".bt2", ".ht2")):
                 prefix = name[:-6]
                 if prefix.endswith(".rev"):
                     prefix = prefix[:-4]
@@ -443,10 +456,13 @@ def list_indexes(airplane: bool = False):
         fa_exists = (util.CACHE_DIR / f"{prefix}.fa.gz").exists()
         mmi_exists = (util.CACHE_DIR / f"{prefix}.mmi").exists()
         bt2_exists = (util.CACHE_DIR / f"{prefix}.1.bt2").exists()
+        ht2_exists = (util.CACHE_DIR / f"{prefix}.1.ht2").exists()
         if fa_exists:
             suffixes.append(f"Minimap2{' with MMI' if mmi_exists else ''}")
         if bt2_exists:
             suffixes.append("Bowtie2")
+        if ht2_exists:
+            suffixes.append("Hisat2")
         suffix_str = ", ".join(suffixes)
         print(f"Local\t{prefix} ({suffix_str})")
 
